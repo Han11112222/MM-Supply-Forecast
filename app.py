@@ -141,7 +141,7 @@ def main():
          
         df_input = df_merged.loc[missing_idx, ['일자', '최저기온(℃)', '최고기온(℃)']].copy()
         
-        # 🟢 수정된 부분: 컬럼 분할(st.columns)을 제거하고 순차적으로 배치
+        # 1. 기상청 예보 입력 (st.columns 제거하고 순차 배치)
         st.markdown("### 1️⃣ 기상청 예보 입력 (최저/최고)")
         st.caption("👇 아래 표를 수정하면 그래프에 실시간으로 반영됩니다.")
             
@@ -157,12 +157,12 @@ def main():
             use_container_width=True
         )
         
-        st.markdown("---") # 구분선 추가 (깔끔하게 보이기 위함)
+        st.markdown("---") 
         
+        # 2. 분석 실행 버튼 (하단 배치, 꽉 차게)
         st.markdown("### 2️⃣ 분석 실행")
         st.write("입력된 예보와 과거 데이터를 결합하여 최종 공급량을 추정합니다.")
         run_btn = st.button("🚀 예측 실행 및 그래프 그리기", type="primary", use_container_width=True) 
-        # use_container_width=True를 추가하여 버튼을 가로로 꽉 차게 만들었습니다.
              
         if run_btn:
             # A. 데이터 업데이트
@@ -309,8 +309,37 @@ def main():
                     "text/csv"
                 )
     else:
+        # 🟢 수정된 부분: 확정된 실적만 보여주는 화면에서도 소계 및 포맷팅 적용
         st.success("✅ 해당 월의 모든 실적이 확정되었습니다.")
-        st.dataframe(df_merged)
+        
+        # 보기 좋게 가공할 데이터프레임 복사
+        df_view = df_merged.copy()
+        
+        # 날짜 포맷 정리 (YYYY-MM-DD)
+        if '일자' in df_view.columns:
+            df_view['일자'] = df_view['일자'].dt.strftime('%Y-%m-%d')
+        
+        # 소계 계산
+        total_supply = df_view['공급량(MJ)'].sum()
+        avg_temp = df_view['평균기온(℃)'].mean()
+        
+        # 소계 행 생성
+        row_subtotal = pd.DataFrame([{
+            '일자': '소계',
+            '공급량(MJ)': total_supply,
+            '평균기온(℃)': avg_temp,
+            '최저기온(℃)': None,
+            '최고기온(℃)': None,
+            '구분': '-'
+        }])
+        
+        df_view = pd.concat([df_view, row_subtotal], ignore_index=True)
+        
+        # 천단위 콤마 및 소수점 포맷팅
+        df_view['공급량(MJ)'] = df_view['공급량(MJ)'].apply(lambda x: f"{x:,.0f}" if pd.notnull(x) else "")
+        df_view['평균기온(℃)'] = df_view['평균기온(℃)'].apply(lambda x: f"{x:.2f}" if pd.notnull(x) else "")
+        
+        st.dataframe(df_view, use_container_width=True)
 
 if __name__ == "__main__":
     main()
