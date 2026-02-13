@@ -140,28 +140,29 @@ def main():
         st.info(f"📌 **{target_month}월**의 남은 **{len(missing_idx)}일**에 대한 예측을 수행합니다.")
          
         df_input = df_merged.loc[missing_idx, ['일자', '최저기온(℃)', '최고기온(℃)']].copy()
-         
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.markdown("### 1️⃣ 기상청 예보 입력 (최저/최고)")
-            st.caption("👇 아래 표를 수정하면 그래프에 실시간으로 반영됩니다.")
-             
-            edited_df = st.data_editor(
-                df_input,
-                num_rows="fixed",
-                hide_index=True,
-                column_config={
-                    "일자": st.column_config.DateColumn("날짜", format="MM-DD", disabled=True),
-                    "최저기온(℃)": st.column_config.NumberColumn("최저기온", required=True),
-                    "최고기온(℃)": st.column_config.NumberColumn("최고기온", required=True),
-                },
-                use_container_width=True
-            )
-         
-        with col2:
-            st.markdown("### 2️⃣ 분석 실행")
-            st.write("입력된 예보와 과거 데이터를 결합하여 최종 공급량을 추정합니다.")
-            run_btn = st.button("🚀 예측 실행 및 그래프 그리기", type="primary")
+        
+        # 🟢 수정된 부분: 컬럼 분할(st.columns)을 제거하고 순차적으로 배치
+        st.markdown("### 1️⃣ 기상청 예보 입력 (최저/최고)")
+        st.caption("👇 아래 표를 수정하면 그래프에 실시간으로 반영됩니다.")
+            
+        edited_df = st.data_editor(
+            df_input,
+            num_rows="fixed",
+            hide_index=True,
+            column_config={
+                "일자": st.column_config.DateColumn("날짜", format="MM-DD", disabled=True),
+                "최저기온(℃)": st.column_config.NumberColumn("최저기온", required=True),
+                "최고기온(℃)": st.column_config.NumberColumn("최고기온", required=True),
+            },
+            use_container_width=True
+        )
+        
+        st.markdown("---") # 구분선 추가 (깔끔하게 보이기 위함)
+        
+        st.markdown("### 2️⃣ 분석 실행")
+        st.write("입력된 예보와 과거 데이터를 결합하여 최종 공급량을 추정합니다.")
+        run_btn = st.button("🚀 예측 실행 및 그래프 그리기", type="primary", use_container_width=True) 
+        # use_container_width=True를 추가하여 버튼을 가로로 꽉 차게 만들었습니다.
              
         if run_btn:
             # A. 데이터 업데이트
@@ -274,18 +275,15 @@ def main():
             )
             st.plotly_chart(fig, use_container_width=True)
              
-            # 7. 다운로드 (수정된 부분)
+            # 7. 다운로드
             with st.expander("📋 상세 데이터 보기"):
                 df_down = df_final.copy()
                 
-                # 날짜 포맷팅
                 df_down['일자'] = df_down['일자'].dt.strftime('%Y-%m-%d')
                 
-                # 소계 계산 (합계/평균)
                 total_supply = df_down['공급량(MJ)'].sum()
                 avg_temp = df_down['평균기온(℃)'].mean()
 
-                # 소계 행 생성
                 row_subtotal = pd.DataFrame([{
                     '일자': '소계',
                     '공급량(MJ)': total_supply,
@@ -296,10 +294,8 @@ def main():
                     '데이터출처': '-'
                 }])
 
-                # 데이터프레임 합치기
                 df_down = pd.concat([df_down, row_subtotal], ignore_index=True)
 
-                # 천단위 콤마 서식 적용 (문자열로 변환됨)
                 df_down['공급량(MJ)'] = df_down['공급량(MJ)'].apply(lambda x: f"{x:,.0f}" if pd.notnull(x) else "")
                 df_down['평균기온(℃)'] = df_down['평균기온(℃)'].apply(lambda x: f"{x:.2f}" if pd.notnull(x) else "")
                 
