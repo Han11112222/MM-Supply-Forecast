@@ -252,8 +252,8 @@ def main():
             )
             st.plotly_chart(fig, use_container_width=True)
             
-            # 🟢 수정 2: 3차 다항식 수식 표시
-            st.info(f"💡 **공급량 예측 모델 수식 (3차 다항식):** `{formula_str}`")
+            # 🟢 수정 2: 3차 다항식 수식 표시 (백틱 제거하여 폰트 사이즈 통일)
+            st.info(f"💡 **공급량 예측 모델 수식 (3차 다항식):** {formula_str}")
              
             with st.expander("📋 상세 데이터 보기"):
                 df_down = df_final.copy()
