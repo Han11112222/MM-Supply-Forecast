@@ -329,9 +329,20 @@ def main():
                     fig.add_trace(go.Bar(x=df_sub['일자'], y=df_sub['공급량(MJ)'], name=f"{source}",
                                          marker_color=color_map[source]))
 
-            fig.add_trace(go.Scatter(x=df_final['일자'], y=df_final['평균기온(℃)'], name='평균기온(추정)',
-                                     mode='lines+markers', line=dict(color='red', width=2, dash='dot'),
-                                     yaxis='y2'))
+            # 🟢 수정: 평균기온을 실적(실제)과 추정으로 분리 표기
+            df_t_act = df_final[df_final['데이터출처'] == '실적']
+            df_t_est = df_final[df_final['데이터출처'] != '실적']
+
+            if not df_t_act.empty:
+                fig.add_trace(go.Scatter(x=df_t_act['일자'], y=df_t_act['평균기온(℃)'], name='평균기온(실적)',
+                                         mode='lines+markers', line=dict(color='red', width=2),
+                                         yaxis='y2'))
+            if not df_t_est.empty:
+                # 선이 끊기지 않도록 마지막 실적 지점을 추정선의 시작점으로 포함
+                df_t_est_line = pd.concat([df_t_act.tail(1), df_t_est]) if not df_t_act.empty else df_t_est
+                fig.add_trace(go.Scatter(x=df_t_est_line['일자'], y=df_t_est_line['평균기온(℃)'], name='평균기온(추정)',
+                                         mode='lines+markers', line=dict(color='red', width=2, dash='dot'),
+                                         yaxis='y2'))
 
             fig.update_layout(
                 title=dict(text=f"일별 공급량 및 기온 추이 ({target_month}월)", font=dict(size=20)),
